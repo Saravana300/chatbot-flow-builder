@@ -1,6 +1,8 @@
 import React, { useCallback, useState } from 'react';
 import './editorPage.scss';
 import '@xyflow/react/dist/style.css';
+import iziToast from 'izitoast';
+import 'izitoast/dist/css/iziToast.min.css';
 import { addEdge, Edge, applyEdgeChanges, Node, applyNodeChanges, ReactFlow } from '@xyflow/react';
 
 const randomColors = [
@@ -50,12 +52,34 @@ const EditorPage: React.FC = () => {
     );
 
     const saveChange = () => {
-        if (inputValue) {
-            setNodes((nodes) =>
-                nodes.map((node) =>
-                    node.id === activeNode?.id ? { ...node, data: { ...node.data, label: inputValue, }, } : node
-                )
-            );
+        const connectedNodeIds = new Set<string>();
+        edges.forEach((edge) => {
+            connectedNodeIds.add(edge.source);
+            connectedNodeIds.add(edge.target);
+        });
+        const unconnectedNodes = nodes.filter((node) => !connectedNodeIds.has(node.id));
+        if (!unconnectedNodes.length) {
+            if (inputValue) {
+                setNodes((nodes) =>
+                    nodes.map((node) =>
+                        node.id === activeNode?.id ? { ...node, data: { ...node.data, label: inputValue, }, } : node
+                    )
+                );
+            } else {
+                iziToast.error({
+                    title: 'Input Required',
+                    message: 'Please enter a value before proceeding.',
+                    position: 'topRight',
+                    timeout: 4000
+                });
+            }
+        } else {
+            iziToast.warning({
+                title: 'Incomplete Flow',
+                message: 'Kindly connect all the nodes to ensure the chatbot flow works properly.',
+                position: 'bottomRight',
+                timeout: 4000
+            });
         }
     }
 
